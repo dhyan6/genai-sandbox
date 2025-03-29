@@ -120,7 +120,7 @@ const capabilities: Capability[] = [
 function App() {
   const [transformationResult, setTransformationResult] = useState<TransformationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentText, setCurrentText] = useState('');
+  const [currentText, setCurrentText] = useState('The Amazon rainforest, often referred to as the "lungs of the Earth," produces 20% of the world\'s oxygen and is home to an estimated 10% of the planet\'s known species. However, deforestation has accelerated in recent decades due to logging, agriculture, and infrastructure development. Scientists warn that continued destruction of the rainforest could lead to severe climate consequences, including reduced biodiversity and increased carbon emissions.');
 
   const handleTransformRequest = async (text: string, capability: Capability) => {
     if (!text || !text.trim()) {
