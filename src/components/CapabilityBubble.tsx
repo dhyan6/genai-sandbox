@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useDrag } from 'react-dnd/dist/hooks';
 import styled from '@emotion/styled';
 import { motion } from 'framer-motion';
@@ -48,13 +48,26 @@ const BubbleDescription = styled.p`
 
 export const CapabilityBubble: React.FC<CapabilityBubbleProps> = ({ capability }) => {
     const bubbleRef = useRef<HTMLDivElement>(null);
+    
     const [{ isDragging }, drag] = useDrag({
         type: 'capability',
-        item: capability,
+        item: () => {
+            console.log('Starting drag with capability:', capability);
+            return capability;
+        },
         collect: (monitor) => ({
             isDragging: !!monitor.isDragging(),
         }),
+        end: (item, monitor) => {
+            const didDrop = monitor.didDrop();
+            console.log('Drag ended. Was dropped:', didDrop);
+        }
     });
+
+    // Log when isDragging changes
+    useEffect(() => {
+        console.log('Is dragging:', isDragging);
+    }, [isDragging]);
 
     // Apply the drag ref to the bubble ref
     drag(bubbleRef);

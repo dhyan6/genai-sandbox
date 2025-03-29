@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { useDrop } from 'react-dnd/dist/hooks';
 import styled from '@emotion/styled';
 import { motion } from 'framer-motion';
@@ -106,18 +106,31 @@ export const TextEditor: React.FC<TextEditorProps> = ({
     const [{ isOver }, dropRef] = useDrop(() => ({
         accept: 'capability',
         drop: (item: Capability) => {
+            console.log('Drop event triggered');
+            console.log('Text content:', text);
+            console.log('Capability:', item);
+            
             if (text && text.trim()) {
+                console.log('Calling onTransformRequest');
                 onTransformRequest(text, item);
+            } else {
+                console.log('No text to transform');
             }
             return { dropped: true };
         },
         collect: monitor => ({
             isOver: monitor.isOver(),
         }),
-    }));
+    }), [text, onTransformRequest]);
+
+    // Log when isOver changes
+    useEffect(() => {
+        console.log('Is over drop target:', isOver);
+    }, [isOver]);
 
     // Combine the refs
     const setRefs = (element: HTMLDivElement) => {
+        console.log('Setting refs for element:', element);
         editorRef.current = element;
         dropRef(element);
     };
