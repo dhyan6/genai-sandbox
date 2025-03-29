@@ -10,4 +10,12 @@ export default defineConfig({
   },
   // This ensures assets are served from the correct base path
   base: './',
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+    },
+  },
 })

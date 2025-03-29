@@ -1,11 +1,10 @@
 import React from 'react';
 import styled from '@emotion/styled';
 import { motion } from 'framer-motion';
-import { TransformationResult } from '../types';
 import ReactMarkdown from 'react-markdown';
 
 interface OutputPanelProps {
-    result: TransformationResult | null;
+    result: { result: string } | null;
 }
 
 const PanelContainer = styled(motion.div)`
@@ -18,12 +17,12 @@ const PanelContainer = styled(motion.div)`
     transition: background-color 0.3s ease;
 `;
 
-const Header = styled.div<{ $bgColor?: string }>`
+const Header = styled.div`
     padding: 16px 20px;
     font-size: 1.1rem;
     font-weight: 500;
     color: #1a1a1a;
-    background: ${props => props.$bgColor || '#f9f9f9'};
+    background: #f9f9f9;
 `;
 
 const Content = styled.div`
@@ -63,15 +62,6 @@ const Content = styled.div`
 `;
 
 export const OutputPanel: React.FC<OutputPanelProps> = ({ result }) => {
-    const getLightColor = (color: string) => {
-        // Convert hex to rgba with 0.15 opacity
-        const hex = color.replace('#', '');
-        const r = parseInt(hex.substring(0, 2), 16);
-        const g = parseInt(hex.substring(2, 4), 16);
-        const b = parseInt(hex.substring(4, 6), 16);
-        return `rgba(${r}, ${g}, ${b}, 0.15)`;
-    };
-
     if (!result) {
         return (
             <PanelContainer
@@ -87,23 +77,19 @@ export const OutputPanel: React.FC<OutputPanelProps> = ({ result }) => {
         );
     }
 
-    const bgColor = result.appliedCapabilities[0]?.color 
-        ? getLightColor(result.appliedCapabilities[0].color)
-        : '#f9f9f9';
-
     return (
         <PanelContainer
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
         >
-            <Header $bgColor={bgColor}>Output</Header>
+            <Header>Output</Header>
             <Content>
                 <ReactMarkdown components={{
                     p: ({ children }) => <p>{children}</p>,
                     strong: ({ children }) => <strong>{children}</strong>
                 }}>
-                    {result.transformedText.replace(/\n{2,}/g, '\n').trim()}
+                    {result.result.replace(/\n{2,}/g, '\n').trim()}
                 </ReactMarkdown>
             </Content>
         </PanelContainer>

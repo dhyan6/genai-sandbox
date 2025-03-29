@@ -16,8 +16,5 @@ export interface Capability {
 }
 
 export interface TransformationResult {
-    originalText: string;
-    transformedText: string;
-    appliedCapabilities: Capability[];
-    timestamp: Date;
+    result: string;
 } 

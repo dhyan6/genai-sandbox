@@ -1,44 +1,21 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import OpenAI from 'openai';
+const { OpenAI } = require('openai');
+const { SYSTEM_PROMPT, CAPABILITY_PROMPTS } = require('../src/config/prompts');
 
-console.log('Initializing API endpoint...');
-
-// Define valid capability types as strings
 const VALID_CAPABILITY_TYPES = {
     SUMMARIZATION: 'summarization',
     CATEGORIZATION: 'categorization',
     ANALYSIS: 'analysis',
     KEYWORD_EXTRACTION: 'keyword_extraction',
     SENTIMENT_ANALYSIS: 'sentiment_analysis'
-} as const;
+};
 
-type ValidCapabilityType = typeof VALID_CAPABILITY_TYPES[keyof typeof VALID_CAPABILITY_TYPES];
-
-console.log('Valid capability types:', Object.values(VALID_CAPABILITY_TYPES));
+console.log('Initializing API endpoint...');
 
 // Check if API key is present and log its status (but not the key itself)
 const apiKeyStatus = process.env.OPENAI_API_KEY ? 'present' : 'missing';
 console.log('OpenAI API Key status:', apiKeyStatus);
 
-const getPromptForCapability = (text: string, capability: { type: string }): string => {
-    const type = capability.type.toLowerCase();
-    switch (type) {
-        case VALID_CAPABILITY_TYPES.SUMMARIZATION:
-            return `Summarize the main idea and key points in one sentence. Start your response with a bold header 'Summarize'.\n\n${text}`;
-        case VALID_CAPABILITY_TYPES.CATEGORIZATION:
-            return `Identify 3-4 key topics and themes, explaining each in a brief sentence. Start your response with a bold header 'Categorize' and format each topic title in bold.\n\n${text}`;
-        case VALID_CAPABILITY_TYPES.ANALYSIS:
-            return `Provide a 2-3 line analysis of the text. Start your response with a bold header 'Analyze'.\n\n${text}`;
-        case VALID_CAPABILITY_TYPES.KEYWORD_EXTRACTION:
-            return `List some essential keywords with a very brief explanation for each. Start your response with a bold header 'Extract Keywords'.\n\n${text}`;
-        case VALID_CAPABILITY_TYPES.SENTIMENT_ANALYSIS:
-            return `Describe the emotional tone of this text in a few words. Start your response with a bold header 'Analyze Sentiment'.\n\n${text}`;
-        default:
-            return `Please analyze and transform the following text:\n\n${text}`;
-    }
-};
-
-const handler = async (request: VercelRequest, response: VercelResponse) => {
+async function handler(request, response) {
     console.log('API request received:', {
         method: request.method,
         headers: {
@@ -93,25 +70,36 @@ const handler = async (request: VercelRequest, response: VercelResponse) => {
             console.error('Invalid capability type:', capability.type);
             console.error('Expected one of:', validTypes);
             return response.status(400).json({ 
-                error: 'Invalid capability type',
-                received: capability.type,
-                expected: validTypes
+                error: `Invalid capability type. Expected one of: ${validTypes.join(', ')}`
             });
         }
 
-        console.log('Processing request with capability:', capability.type);
+        // Find the matching capability prompt
+        const capabilityKey = Object.keys(VALID_CAPABILITY_TYPES).find(
+            key => VALID_CAPABILITY_TYPES[key] === capabilityType
+        );
+        
+        if (!capabilityKey || !CAPABILITY_PROMPTS[capabilityKey]) {
+            console.error('No prompt found for capability:', capabilityType);
+            return response.status(500).json({ error: 'Internal server error' });
+        }
+
+        // Get the prompt and replace the placeholder with the actual text
+        const prompt = CAPABILITY_PROMPTS[capabilityKey].prompt.replace('{text}', text);
+
+        console.log('Processing request with capability:', capabilityType);
 
         const completion = await openai.chat.completions.create({
-            model: 'gpt-4',
+            model: "gpt-3.5-turbo",
             messages: [
                 {
-                    role: 'system',
-                    content: 'You are a helpful AI assistant that specializes in text transformation.',
+                    role: "system",
+                    content: SYSTEM_PROMPT
                 },
                 {
-                    role: 'user',
-                    content: getPromptForCapability(text, capability),
-                },
+                    role: "user",
+                    content: prompt
+                }
             ],
             temperature: 0.7,
             max_tokens: 500,
@@ -122,47 +110,14 @@ const handler = async (request: VercelRequest, response: VercelResponse) => {
             choicesLength: completion.choices.length
         });
 
-        const transformedText = completion.choices[0].message?.content?.trim();
-        if (!transformedText) {
-            console.error('No response content from OpenAI');
-            throw new Error('No response content from OpenAI');
-        }
-
-        const result = {
-            transformedText,
-            originalText: text,
-            appliedCapabilities: [capability],
-            timestamp: new Date(),
-        };
-
+        const result = completion.choices[0].message.content;
         console.log('Sending successful response');
-        return response.status(200).json(result);
-    } catch (error: any) {
-        console.error('API Error:', {
-            name: error.name,
-            message: error.message,
-            stack: error.stack,
-            response: error.response?.data,
-            status: error.response?.status,
-            code: error.code,
-            type: error.type
-        });
+        return response.status(200).json({ result });
 
-        // Handle OpenAI API specific errors
-        if (error.response?.status === 401) {
-            return response.status(500).json({ 
-                error: 'Invalid OpenAI API key',
-                details: process.env.NODE_ENV === 'development' ? error.message : undefined
-            });
-        }
-
-        return response.status(500).json({ 
-            error: error.response?.data?.error || error.message || 'Failed to transform text',
-            details: process.env.NODE_ENV === 'development' ? error.message : undefined,
-            type: error.type,
-            code: error.code
-        });
+    } catch (error) {
+        console.error('Error processing request:', error);
+        return response.status(500).json({ error: 'Failed to process request' });
     }
-};
+}
 
 module.exports = handler; 
