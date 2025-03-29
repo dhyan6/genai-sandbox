@@ -3,6 +3,7 @@ import OpenAI from 'openai';
 import { CapabilityType } from '../src/types';
 
 console.log('Initializing API endpoint...');
+console.log('Available CapabilityTypes:', Object.values(CapabilityType));
 
 // Check if API key is present and log its status (but not the key itself)
 const apiKeyStatus = process.env.OPENAI_API_KEY ? 'present' : 'missing';
@@ -62,6 +63,9 @@ export default async function handler(
 
         const { text, capability } = request.body;
 
+        console.log('Received capability:', capability);
+        console.log('Capability type:', capability?.type);
+
         // Validate request body
         if (!text) {
             console.error('Missing text in request body');
@@ -71,9 +75,26 @@ export default async function handler(
             console.error('Missing capability in request body');
             return response.status(400).json({ error: 'Missing capability in request body' });
         }
-        if (!capability.type || !Object.values(CapabilityType).includes(capability.type)) {
+        if (!capability.type) {
+            console.error('Missing capability type');
+            return response.status(400).json({ error: 'Missing capability type' });
+        }
+
+        // Convert capability type to lowercase for comparison
+        const capabilityType = capability.type.toLowerCase();
+        const validTypes = Object.values(CapabilityType).map(type => type.toLowerCase());
+        
+        console.log('Normalized capability type:', capabilityType);
+        console.log('Valid types:', validTypes);
+        
+        if (!validTypes.includes(capabilityType)) {
             console.error('Invalid capability type:', capability.type);
-            return response.status(400).json({ error: 'Invalid capability type' });
+            console.error('Expected one of:', validTypes);
+            return response.status(400).json({ 
+                error: 'Invalid capability type',
+                received: capability.type,
+                expected: Object.values(CapabilityType)
+            });
         }
 
         console.log('Processing request with capability:', capability.type);
