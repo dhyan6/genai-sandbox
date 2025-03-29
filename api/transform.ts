@@ -2,6 +2,11 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import OpenAI from 'openai';
 import { CapabilityType } from '../src/types';
 
+// Check if API key is present
+if (!process.env.OPENAI_API_KEY) {
+    console.error('OPENAI_API_KEY is not set in environment variables');
+}
+
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
@@ -27,8 +32,19 @@ export default async function handler(
     request: VercelRequest,
     response: VercelResponse,
 ) {
+    console.log('API request received:', {
+        method: request.method,
+        body: request.body,
+        headers: request.headers
+    });
+
     if (request.method !== 'POST') {
         return response.status(405).json({ error: 'Method not allowed' });
+    }
+
+    if (!process.env.OPENAI_API_KEY) {
+        console.error('OPENAI_API_KEY is not set');
+        return response.status(500).json({ error: 'OpenAI API key is not configured' });
     }
 
     try {
@@ -37,6 +53,8 @@ export default async function handler(
         if (!text || !capability) {
             return response.status(400).json({ error: 'Missing required fields' });
         }
+
+        console.log('Processing request with:', { text, capability });
 
         const completion = await openai.chat.completions.create({
             model: 'gpt-4',
@@ -54,14 +72,36 @@ export default async function handler(
             max_tokens: 500,
         });
 
-        return response.status(200).json({
-            transformedText: completion.choices[0].message?.content?.trim() || '',
+        console.log('OpenAI API response received');
+
+        const transformedText = completion.choices[0].message?.content?.trim();
+        if (!transformedText) {
+            throw new Error('No response content from OpenAI');
+        }
+
+        const result = {
+            transformedText,
             originalText: text,
             appliedCapabilities: [capability],
             timestamp: new Date(),
-        });
+        };
+
+        console.log('Sending response:', result);
+        return response.status(200).json(result);
     } catch (error: any) {
-        console.error('Error:', error.response?.data || error.message);
-        return response.status(500).json({ error: 'Failed to transform text' });
+        console.error('API Error:', {
+            message: error.message,
+            response: error.response?.data,
+            status: error.response?.status
+        });
+
+        // Handle OpenAI API specific errors
+        if (error.response?.status === 401) {
+            return response.status(500).json({ error: 'Invalid OpenAI API key' });
+        }
+
+        return response.status(500).json({ 
+            error: error.response?.data?.error || error.message || 'Failed to transform text' 
+        });
     }
 } 
