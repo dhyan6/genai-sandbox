@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DndProvider } from 'react-dnd/dist/core';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import styled from '@emotion/styled';
 import { CapabilityBubble } from './components/CapabilityBubble';
 import { TextEditor } from './components/TextEditor';
 import { OutputPanel } from './components/OutputPanel';
+import { PasswordModal } from './components/PasswordModal';
+import { RateLimitModal } from './components/RateLimitModal';
 import { transformText } from './services/ai';
 import { Capability, CapabilityType, TransformationResult } from './types';
 
@@ -121,10 +123,31 @@ function App() {
   const [transformationResult, setTransformationResult] = useState<TransformationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [currentText, setCurrentText] = useState('The Amazon rainforest, often referred to as the "lungs of the Earth," produces 20% of the world\'s oxygen and is home to an estimated 10% of the planet\'s known species. However, deforestation has accelerated in recent decades due to logging, agriculture, and infrastructure development. Scientists warn that continued destruction of the rainforest could lead to severe climate consequences, including reduced biodiversity and increased carbon emissions.');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showRateLimit, setShowRateLimit] = useState(false);
+  const [requestCount, setRequestCount] = useState(0);
+  const [lastRequestTime, setLastRequestTime] = useState(Date.now());
+
+  useEffect(() => {
+    // Reset request count after 5 minutes
+    const resetTimer = setInterval(() => {
+      if (Date.now() - lastRequestTime >= 5 * 60 * 1000) {
+        setRequestCount(0);
+        setShowRateLimit(false);
+      }
+    }, 1000);
+
+    return () => clearInterval(resetTimer);
+  }, [lastRequestTime]);
 
   const handleTransformRequest = async (text: string, capability: Capability) => {
     if (!text || !text.trim()) {
       alert('Please enter some text before applying a transformation.');
+      return;
+    }
+
+    if (requestCount >= 10) {
+      setShowRateLimit(true);
       return;
     }
     
@@ -132,6 +155,8 @@ function App() {
     try {
       const result = await transformText(text.trim(), capability);
       setTransformationResult(result);
+      setRequestCount(prev => prev + 1);
+      setLastRequestTime(Date.now());
     } catch (error) {
       console.error('Error:', error);
       alert('Failed to transform text. Please try again.');
@@ -139,6 +164,26 @@ function App() {
       setIsLoading(false);
     }
   };
+
+  const handlePasswordSubmit = (isCorrect: boolean) => {
+    if (isCorrect) {
+      setIsAuthenticated(true);
+      // Store authentication in session storage
+      sessionStorage.setItem('isAuthenticated', 'true');
+    }
+  };
+
+  // Check for existing authentication on mount
+  useEffect(() => {
+    const auth = sessionStorage.getItem('isAuthenticated');
+    if (auth === 'true') {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  if (!isAuthenticated) {
+    return <PasswordModal onPasswordSubmit={handlePasswordSubmit} />;
+  }
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -169,6 +214,7 @@ function App() {
           </MainContent>
         </ContentWrapper>
       </AppContainer>
+      {showRateLimit && <RateLimitModal />}
     </DndProvider>
   );
 }
