@@ -30,6 +30,26 @@ A modern web application that demonstrates the power of AI capabilities through 
 
 ### Installation
 
+#### Option 1: Using the Setup Script (Recommended)
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/genai-showcase.git
+cd genai-showcase
+```
+
+2. Run the setup script:
+```bash
+./setup.sh
+```
+The script will:
+- Create a `.env` file from the template
+- Prompt you for your OpenAI API key
+- Install dependencies
+- Set up everything automatically
+
+#### Option 2: Manual Setup
+
 1. Clone the repository:
 ```bash
 git clone https://github.com/yourusername/genai-showcase.git
