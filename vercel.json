@@ -4,18 +4,5 @@
       "source": "/projects/genai-sandbox-app",
       "destination": "https://genai-sandbox.vercel.app"
     }
-  ],
-  "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/"
-    }
   ]
 } 
