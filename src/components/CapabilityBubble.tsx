@@ -36,21 +36,14 @@ const BubbleContainer = styled(motion.div)<{ $color: string; $textColor: string 
 `;
 
 const BubbleText = styled.span`
-    color: white;
-    font-weight: 600;
-    font-size: 1rem;
-    text-align: center;
-    margin-bottom: 4px;
+    font-weight: bold;
+    color: #333;
 `;
 
-const BubbleDescription = styled.span`
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 0.75rem;
-    text-align: center;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+const BubbleDescription = styled.p`
+    margin: 0;
+    font-size: 0.9em;
+    color: #666;
 `;
 
 export const CapabilityBubble: React.FC<CapabilityBubbleProps> = ({ capability }) => {
@@ -77,7 +70,8 @@ export const CapabilityBubble: React.FC<CapabilityBubbleProps> = ({ capability }
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
         >
-            {capability.name}
+            <BubbleText>{capability.name}</BubbleText>
+            <BubbleDescription>{capability.description}</BubbleDescription>
         </BubbleContainer>
     );
 }; 

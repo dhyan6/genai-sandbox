@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import { useRef, useState } from 'react';
 import type { DropTargetMonitor } from 'react-dnd/dist/types';
 import { useDrop } from 'react-dnd/dist/hooks';
 import styled from '@emotion/styled';
@@ -102,9 +102,9 @@ export const TextEditor: React.FC<TextEditorProps> = ({
     text,
     onTextChange
 }) => {
-    const containerRef = useRef<HTMLDivElement>(null);
+    const editorRef = useRef<HTMLDivElement>(null);
     
-    const [{ isOver }, drop] = useDrop(() => ({
+    const [{ isOver }, dropRef] = useDrop(() => ({
         accept: 'capability',
         drop: (item: Capability) => {
             if (text && text.trim()) {
@@ -117,6 +117,12 @@ export const TextEditor: React.FC<TextEditorProps> = ({
         }),
     }));
 
+    // Combine the refs
+    const setRefs = (element: HTMLDivElement) => {
+        editorRef.current = element;
+        dropRef(element);
+    };
+
     const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         onTextChange(e.target.value);
     };
@@ -127,7 +133,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
 
     return (
         <EditorContainer
-            ref={drop(containerRef)}
+            ref={setRefs}
             style={{
                 border: isOver ? '1px solid #4A8BDF' : '1px solid #ddd',
             }}

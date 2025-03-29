@@ -1,4 +1,4 @@
-# GenAI Showcase
+# GenAI Sandbox
 
 A modern web application that demonstrates the power of AI capabilities through an intuitive drag-and-drop interface. Built with React, TypeScript, and Vite, this project showcases various text transformation capabilities powered by OpenAI's API.
 
@@ -34,8 +34,8 @@ A modern web application that demonstrates the power of AI capabilities through 
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/genai-showcase.git
-cd genai-showcase
+git clone https://github.com/yourusername/genai-sandbox.git
+cd genai-sandbox
 ```
 
 2. Run the setup script:
@@ -52,8 +52,8 @@ The script will:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/genai-showcase.git
-cd genai-showcase
+git clone https://github.com/yourusername/genai-sandbox.git
+cd genai-sandbox
 ```
 
 2. Install dependencies:
