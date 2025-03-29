@@ -58,7 +58,7 @@ export const CapabilityBubble: React.FC<CapabilityBubbleProps> = ({ capability }
         collect: (monitor) => ({
             isDragging: !!monitor.isDragging(),
         }),
-        end: (item, monitor) => {
+        end: (_, monitor) => {
             const didDrop = monitor.didDrop();
             console.log('Drag ended. Was dropped:', didDrop);
         }
