@@ -37,10 +37,7 @@ const getPromptForCapability = (text: string, capability: { type: CapabilityType
     }
 };
 
-export default async function handler(
-    request: VercelRequest,
-    response: VercelResponse,
-) {
+const handler = async (request: VercelRequest, response: VercelResponse) => {
     try {
         console.log('API request received:', {
             method: request.method,
@@ -170,4 +167,6 @@ export default async function handler(
             code: error.code
         });
     }
-} 
+};
+
+export default handler; 
