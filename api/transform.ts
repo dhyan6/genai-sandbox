@@ -1,19 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import OpenAI from 'openai';
-import { CapabilityType } from '../src/types.js';
+import { CapabilityType } from '../src/types';
 
 console.log('Initializing API endpoint...');
-
-// Define valid capability types explicitly
-const VALID_CAPABILITY_TYPES = {
-    summarization: 'summarization',
-    categorization: 'categorization',
-    analysis: 'analysis',
-    keyword_extraction: 'keyword_extraction',
-    sentiment_analysis: 'sentiment_analysis'
-} as const;
-
-console.log('Valid capability types:', VALID_CAPABILITY_TYPES);
+console.log('Available CapabilityTypes:', Object.values(CapabilityType));
 
 // Check if API key is present and log its status (but not the key itself)
 const apiKeyStatus = process.env.OPENAI_API_KEY ? 'present' : 'missing';
@@ -30,18 +20,17 @@ try {
     throw error;
 }
 
-const getPromptForCapability = (text: string, capability: { type: string }): string => {
-    const type = capability.type.toLowerCase();
-    switch (type) {
-        case VALID_CAPABILITY_TYPES.summarization:
+const getPromptForCapability = (text: string, capability: { type: CapabilityType }): string => {
+    switch (capability.type) {
+        case CapabilityType.Summarization:
             return `Summarize the main idea and key points in one sentence. Start your response with a bold header 'Summarize'.\n\n${text}`;
-        case VALID_CAPABILITY_TYPES.categorization:
+        case CapabilityType.Categorization:
             return `Identify 3-4 key topics and themes, explaining each in a brief sentence. Start your response with a bold header 'Categorize' and format each topic title in bold.\n\n${text}`;
-        case VALID_CAPABILITY_TYPES.analysis:
+        case CapabilityType.Analysis:
             return `Provide a 2-3 line analysis of the text. Start your response with a bold header 'Analyze'.\n\n${text}`;
-        case VALID_CAPABILITY_TYPES.keyword_extraction:
+        case CapabilityType.KeywordExtraction:
             return `List some essential keywords with a very brief explanation for each. Start your response with a bold header 'Extract Keywords'.\n\n${text}`;
-        case VALID_CAPABILITY_TYPES.sentiment_analysis:
+        case CapabilityType.SentimentAnalysis:
             return `Describe the emotional tone of this text in a few words. Start your response with a bold header 'Analyze Sentiment'.\n\n${text}`;
         default:
             return `Please analyze and transform the following text:\n\n${text}`;
@@ -56,7 +45,7 @@ const handler = async (request: VercelRequest, response: VercelResponse) => {
                 'content-type': request.headers['content-type'],
                 'user-agent': request.headers['user-agent']
             },
-            body: JSON.stringify(request.body)
+            body: JSON.stringify(request.body, null, 2)
         });
 
         if (request.method !== 'POST') {
@@ -71,7 +60,7 @@ const handler = async (request: VercelRequest, response: VercelResponse) => {
 
         const { text, capability } = request.body;
 
-        console.log('Received capability:', capability);
+        console.log('Received capability:', JSON.stringify(capability, null, 2));
         console.log('Capability type:', capability?.type);
 
         // Validate request body
@@ -88,14 +77,9 @@ const handler = async (request: VercelRequest, response: VercelResponse) => {
             return response.status(400).json({ error: 'Missing capability type' });
         }
 
-        // Convert capability type to lowercase for comparison
-        const capabilityType = capability.type.toLowerCase();
-        const validTypes = Object.values(VALID_CAPABILITY_TYPES);
-        
-        console.log('Normalized capability type:', capabilityType);
-        console.log('Valid types:', validTypes);
-        
-        if (!validTypes.includes(capabilityType)) {
+        // Validate capability type against enum
+        const validTypes = Object.values(CapabilityType);
+        if (!validTypes.includes(capability.type)) {
             console.error('Invalid capability type:', capability.type);
             console.error('Expected one of:', validTypes);
             return response.status(400).json({ 
