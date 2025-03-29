@@ -2,13 +2,6 @@ import axios from 'axios';
 import { Capability, TransformationResult } from '../types';
 import { CapabilityType } from '../types';
 
-const API_URL = import.meta.env.VITE_OPENAI_API_URL || 'https://api.openai.com/v1/chat/completions';
-const API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
-
-if (!API_KEY) {
-    console.warn('OpenAI API key not found. Please set VITE_OPENAI_API_KEY in your environment variables.');
-}
-
 const getPromptForCapability = (text: string, capability: Capability): string => {
     switch (capability.type) {
         case CapabilityType.Summarization:
