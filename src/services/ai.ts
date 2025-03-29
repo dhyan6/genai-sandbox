@@ -36,9 +36,13 @@ export const transformText = async (
             capability,
         });
 
+        if (!response.data) {
+            throw new Error('No response from server');
+        }
+
         return response.data;
-    } catch (error) {
-        console.error('Error transforming text:', error);
-        throw new Error('Failed to transform text. Please try again.');
+    } catch (error: any) {
+        console.error('Error transforming text:', error.response?.data || error.message);
+        throw new Error(error.response?.data?.error || 'Failed to transform text. Please try again.');
     }
 }; 

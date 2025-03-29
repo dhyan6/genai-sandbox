@@ -1,12 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { Configuration, OpenAIApi } from 'openai';
+import OpenAI from 'openai';
 import { CapabilityType } from '../src/types';
 
-const configuration = new Configuration({
-    apiKey: process.env.VITE_OPENAI_API_KEY,
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
 });
-
-const openai = new OpenAIApi(configuration);
 
 const getPromptForCapability = (text: string, capability: { type: CapabilityType }): string => {
     switch (capability.type) {
@@ -40,7 +38,7 @@ export default async function handler(
             return response.status(400).json({ error: 'Missing required fields' });
         }
 
-        const completion = await openai.createChatCompletion({
+        const completion = await openai.chat.completions.create({
             model: 'gpt-4',
             messages: [
                 {
@@ -57,7 +55,7 @@ export default async function handler(
         });
 
         return response.status(200).json({
-            transformedText: completion.data.choices[0].message?.content?.trim() || '',
+            transformedText: completion.choices[0].message?.content?.trim() || '',
             originalText: text,
             appliedCapabilities: [capability],
             timestamp: new Date(),
