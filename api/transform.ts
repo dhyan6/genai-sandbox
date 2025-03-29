@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { type VercelRequest, type VercelResponse } from '@vercel/node';
 import OpenAI from 'openai';
 
 console.log('Initializing API endpoint...');
@@ -165,4 +165,4 @@ const handler = async (request: VercelRequest, response: VercelResponse) => {
     }
 };
 
-export default handler; 
+export { handler as default }; 
