@@ -6,7 +6,14 @@ export const transformText = async (
     capability: Capability
 ): Promise<TransformationResult> => {
     try {
-        const response = await axios.post('/api/transform', {
+        // Get the base URL in production, or use relative URL in development
+        const baseURL = import.meta.env.PROD ? window.location.origin : '';
+        const url = `${baseURL}/api/transform`;
+        
+        console.log('Making request to:', url);
+        console.log('Request payload:', { text, capability });
+        
+        const response = await axios.post(url, {
             text,
             capability,
         });
@@ -15,9 +22,14 @@ export const transformText = async (
             throw new Error('No response from server');
         }
 
+        console.log('Response received:', response.data);
         return response.data;
     } catch (error: any) {
-        console.error('Error transforming text:', error.response?.data || error.message);
+        console.error('Error details:', {
+            message: error.message,
+            response: error.response?.data,
+            status: error.response?.status
+        });
         throw new Error(error.response?.data?.error || 'Failed to transform text. Please try again.');
     }
 }; 
