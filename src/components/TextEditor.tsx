@@ -1,8 +1,7 @@
-import { useRef, useState } from 'react';
-import type { DropTargetMonitor } from 'react-dnd/dist/types';
+import { useRef } from 'react';
 import { useDrop } from 'react-dnd/dist/hooks';
 import styled from '@emotion/styled';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Capability } from '../types';
 
 interface TextEditorProps {
