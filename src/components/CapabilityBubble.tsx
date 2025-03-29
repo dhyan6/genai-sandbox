@@ -40,12 +40,6 @@ const BubbleText = styled.span`
     color: #333;
 `;
 
-const BubbleDescription = styled.p`
-    margin: 0;
-    font-size: 0.9em;
-    color: #666;
-`;
-
 export const CapabilityBubble: React.FC<CapabilityBubbleProps> = ({ capability }) => {
     const bubbleRef = useRef<HTMLDivElement>(null);
     
@@ -84,7 +78,6 @@ export const CapabilityBubble: React.FC<CapabilityBubbleProps> = ({ capability }
             whileTap={{ scale: 0.98 }}
         >
             <BubbleText>{capability.name}</BubbleText>
-            <BubbleDescription>{capability.description}</BubbleDescription>
         </BubbleContainer>
     );
 }; 
