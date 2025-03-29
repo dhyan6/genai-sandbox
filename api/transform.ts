@@ -2,13 +2,22 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import OpenAI from 'openai';
 import { CapabilityType } from '../src/types';
 
+console.log('Initializing API endpoint...');
+
 // Check if API key is present and log its status (but not the key itself)
 const apiKeyStatus = process.env.OPENAI_API_KEY ? 'present' : 'missing';
 console.log('OpenAI API Key status:', apiKeyStatus);
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
+let openai: OpenAI;
+try {
+    openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+    });
+    console.log('OpenAI client initialized successfully');
+} catch (error) {
+    console.error('Failed to initialize OpenAI client:', error);
+    throw error;
+}
 
 const getPromptForCapability = (text: string, capability: { type: CapabilityType }): string => {
     switch (capability.type) {
@@ -31,26 +40,26 @@ export default async function handler(
     request: VercelRequest,
     response: VercelResponse,
 ) {
-    console.log('API request received:', {
-        method: request.method,
-        headers: {
-            'content-type': request.headers['content-type'],
-            'user-agent': request.headers['user-agent']
-        },
-        body: request.body
-    });
-
-    if (request.method !== 'POST') {
-        console.log('Method not allowed:', request.method);
-        return response.status(405).json({ error: 'Method not allowed' });
-    }
-
-    if (!process.env.OPENAI_API_KEY) {
-        console.error('OpenAI API key is missing');
-        return response.status(500).json({ error: 'OpenAI API key is not configured' });
-    }
-
     try {
+        console.log('API request received:', {
+            method: request.method,
+            headers: {
+                'content-type': request.headers['content-type'],
+                'user-agent': request.headers['user-agent']
+            },
+            body: JSON.stringify(request.body)
+        });
+
+        if (request.method !== 'POST') {
+            console.log('Method not allowed:', request.method);
+            return response.status(405).json({ error: 'Method not allowed' });
+        }
+
+        if (!process.env.OPENAI_API_KEY) {
+            console.error('OpenAI API key is missing');
+            return response.status(500).json({ error: 'OpenAI API key is not configured' });
+        }
+
         const { text, capability } = request.body;
 
         // Validate request body
@@ -61,6 +70,10 @@ export default async function handler(
         if (!capability) {
             console.error('Missing capability in request body');
             return response.status(400).json({ error: 'Missing capability in request body' });
+        }
+        if (!capability.type || !Object.values(CapabilityType).includes(capability.type)) {
+            console.error('Invalid capability type:', capability.type);
+            return response.status(400).json({ error: 'Invalid capability type' });
         }
 
         console.log('Processing request with capability:', capability.type);
@@ -84,7 +97,8 @@ export default async function handler(
                 message: error.message,
                 type: error.type,
                 status: error.status,
-                code: error.code
+                code: error.code,
+                stack: error.stack
             });
             throw error;
         });
@@ -115,17 +129,24 @@ export default async function handler(
             message: error.message,
             stack: error.stack,
             response: error.response?.data,
-            status: error.response?.status
+            status: error.response?.status,
+            code: error.code,
+            type: error.type
         });
 
         // Handle OpenAI API specific errors
         if (error.response?.status === 401) {
-            return response.status(500).json({ error: 'Invalid OpenAI API key' });
+            return response.status(500).json({ 
+                error: 'Invalid OpenAI API key',
+                details: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
         }
 
         return response.status(500).json({ 
             error: error.response?.data?.error || error.message || 'Failed to transform text',
-            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+            type: error.type,
+            code: error.code
         });
     }
 } 
