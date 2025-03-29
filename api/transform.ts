@@ -20,17 +20,6 @@ console.log('Valid capability types:', Object.values(VALID_CAPABILITY_TYPES));
 const apiKeyStatus = process.env.OPENAI_API_KEY ? 'present' : 'missing';
 console.log('OpenAI API Key status:', apiKeyStatus);
 
-let openai: OpenAI;
-try {
-    openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
-    });
-    console.log('OpenAI client initialized successfully');
-} catch (error) {
-    console.error('Failed to initialize OpenAI client:', error);
-    throw error;
-}
-
 const getPromptForCapability = (text: string, capability: { type: string }): string => {
     const type = capability.type.toLowerCase();
     switch (type) {
@@ -50,16 +39,16 @@ const getPromptForCapability = (text: string, capability: { type: string }): str
 };
 
 const handler = async (request: VercelRequest, response: VercelResponse) => {
-    try {
-        console.log('API request received:', {
-            method: request.method,
-            headers: {
-                'content-type': request.headers['content-type'],
-                'user-agent': request.headers['user-agent']
-            },
-            body: JSON.stringify(request.body, null, 2)
-        });
+    console.log('API request received:', {
+        method: request.method,
+        headers: {
+            'content-type': request.headers['content-type'],
+            'user-agent': request.headers['user-agent']
+        },
+        body: JSON.stringify(request.body, null, 2)
+    });
 
+    try {
         if (request.method !== 'POST') {
             console.log('Method not allowed:', request.method);
             return response.status(405).json({ error: 'Method not allowed' });
@@ -69,6 +58,10 @@ const handler = async (request: VercelRequest, response: VercelResponse) => {
             console.error('OpenAI API key is missing');
             return response.status(500).json({ error: 'OpenAI API key is not configured' });
         }
+
+        const openai = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY,
+        });
 
         const { text, capability } = request.body;
 
@@ -122,15 +115,6 @@ const handler = async (request: VercelRequest, response: VercelResponse) => {
             ],
             temperature: 0.7,
             max_tokens: 500,
-        }).catch(error => {
-            console.error('OpenAI API Error:', {
-                message: error.message,
-                type: error.type,
-                status: error.status,
-                code: error.code,
-                stack: error.stack
-            });
-            throw error;
         });
 
         console.log('OpenAI API response received:', {
