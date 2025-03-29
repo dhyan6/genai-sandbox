@@ -2,10 +2,9 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import OpenAI from 'openai';
 import { CapabilityType } from '../src/types';
 
-// Check if API key is present
-if (!process.env.OPENAI_API_KEY) {
-    console.error('OPENAI_API_KEY is not set in environment variables');
-}
+// Check if API key is present and log its status (but not the key itself)
+const apiKeyStatus = process.env.OPENAI_API_KEY ? 'present' : 'missing';
+console.log('OpenAI API Key status:', apiKeyStatus);
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -34,27 +33,37 @@ export default async function handler(
 ) {
     console.log('API request received:', {
         method: request.method,
-        body: request.body,
-        headers: request.headers
+        headers: {
+            'content-type': request.headers['content-type'],
+            'user-agent': request.headers['user-agent']
+        },
+        body: request.body
     });
 
     if (request.method !== 'POST') {
+        console.log('Method not allowed:', request.method);
         return response.status(405).json({ error: 'Method not allowed' });
     }
 
     if (!process.env.OPENAI_API_KEY) {
-        console.error('OPENAI_API_KEY is not set');
+        console.error('OpenAI API key is missing');
         return response.status(500).json({ error: 'OpenAI API key is not configured' });
     }
 
     try {
         const { text, capability } = request.body;
 
-        if (!text || !capability) {
-            return response.status(400).json({ error: 'Missing required fields' });
+        // Validate request body
+        if (!text) {
+            console.error('Missing text in request body');
+            return response.status(400).json({ error: 'Missing text in request body' });
+        }
+        if (!capability) {
+            console.error('Missing capability in request body');
+            return response.status(400).json({ error: 'Missing capability in request body' });
         }
 
-        console.log('Processing request with:', { text, capability });
+        console.log('Processing request with capability:', capability.type);
 
         const completion = await openai.chat.completions.create({
             model: 'gpt-4',
@@ -70,12 +79,24 @@ export default async function handler(
             ],
             temperature: 0.7,
             max_tokens: 500,
+        }).catch(error => {
+            console.error('OpenAI API Error:', {
+                message: error.message,
+                type: error.type,
+                status: error.status,
+                code: error.code
+            });
+            throw error;
         });
 
-        console.log('OpenAI API response received');
+        console.log('OpenAI API response received:', {
+            status: 'success',
+            choicesLength: completion.choices.length
+        });
 
         const transformedText = completion.choices[0].message?.content?.trim();
         if (!transformedText) {
+            console.error('No response content from OpenAI');
             throw new Error('No response content from OpenAI');
         }
 
@@ -86,11 +107,13 @@ export default async function handler(
             timestamp: new Date(),
         };
 
-        console.log('Sending response:', result);
+        console.log('Sending successful response');
         return response.status(200).json(result);
     } catch (error: any) {
         console.error('API Error:', {
+            name: error.name,
             message: error.message,
+            stack: error.stack,
             response: error.response?.data,
             status: error.response?.status
         });
@@ -101,7 +124,8 @@ export default async function handler(
         }
 
         return response.status(500).json({ 
-            error: error.response?.data?.error || error.message || 'Failed to transform text' 
+            error: error.response?.data?.error || error.message || 'Failed to transform text',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 } 
