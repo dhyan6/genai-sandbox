@@ -31,37 +31,12 @@ export const transformText = async (
     capability: Capability
 ): Promise<TransformationResult> => {
     try {
-        const response = await axios.post(
-            API_URL,
-            {
-                model: 'gpt-4',
-                messages: [
-                    {
-                        role: 'system',
-                        content: 'You are a helpful AI assistant that specializes in text transformation.',
-                    },
-                    {
-                        role: 'user',
-                        content: getPromptForCapability(text, capability),
-                    },
-                ],
-                temperature: 0.7,
-                max_tokens: 500,
-            },
-            {
-                headers: {
-                    'Authorization': `Bearer ${API_KEY}`,
-                    'Content-Type': 'application/json',
-                },
-            }
-        );
+        const response = await axios.post('/api/transform', {
+            text,
+            capability,
+        });
 
-        return {
-            originalText: text,
-            transformedText: response.data.choices[0].message.content.trim(),
-            appliedCapabilities: [capability],
-            timestamp: new Date(),
-        };
+        return response.data;
     } catch (error) {
         console.error('Error transforming text:', error);
         throw new Error('Failed to transform text. Please try again.');
